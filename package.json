@@ -1,0 +1,30 @@
+{
+  "name": "modelflow",
+  "version": "1.0.0",
+  "description": "Database model design collaboration tool",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "nuxt": "^3.8.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@element-plus/nuxt": "^1.0.7",
+    "@pinia/nuxt": "^0.5.1",
+    "@vue-flow/background": "^1.3.0",
+    "@vue-flow/controls": "^1.1.1",
+    "@vue-flow/core": "^1.26.0",
+    "@vue-flow/minimap": "^1.4.0",
+    "element-plus": "^2.4.2",
+    "pinia": "^2.1.7",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.7"
+  }
+}

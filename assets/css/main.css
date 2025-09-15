@@ -1,0 +1,442 @@
+/* Import Vue Flow base styles */
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+@import '@vue-flow/controls/dist/style.css';
+@import '@vue-flow/minimap/dist/style.css';
+
+/* Global CSS Custom Properties */
+:root {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  
+  --bg-color: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f5f7fa;
+  
+  --text-primary: #2c3e50;
+  --text-secondary: #606266;
+  --text-tertiary: #909399;
+  
+  --border-color: #e4e7ed;
+  --border-light: #ebeef5;
+  --border-lighter: #f2f6fc;
+  
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.12);
+  --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.15);
+  
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+}
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 { font-size: 28px; }
+h2 { font-size: 24px; }
+h3 { font-size: 20px; }
+h4 { font-size: 16px; }
+h5 { font-size: 14px; }
+h6 { font-size: 12px; }
+
+p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Button enhancements */
+.el-button {
+  border-radius: var(--radius-medium);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.el-button:hover {
+  transform: translateY(-1px);
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #5a9cf8 100%);
+  border-color: var(--primary-color);
+}
+
+.el-button--success {
+  background: linear-gradient(135deg, var(--success-color) 0%, #7ed321 100%);
+  border-color: var(--success-color);
+}
+
+/* Card enhancements */
+.el-card {
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-light);
+  transition: box-shadow 0.3s ease;
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-medium);
+}
+
+/* Form enhancements */
+.el-input__inner,
+.el-textarea__inner,
+.el-select .el-input__inner {
+  border-radius: var(--radius-medium);
+  border-color: var(--border-light);
+  transition: border-color 0.2s ease;
+}
+
+.el-input__inner:focus,
+.el-textarea__inner:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+/* Dialog enhancements */
+.el-dialog {
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-heavy);
+}
+
+.el-dialog__header {
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-lighter);
+}
+
+.el-dialog__body {
+  padding: var(--spacing-xl);
+}
+
+.el-dialog__footer {
+  padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+  border-top: 1px solid var(--border-lighter);
+}
+
+/* Tag enhancements */
+.el-tag {
+  border-radius: var(--radius-small);
+  font-weight: 500;
+}
+
+/* Drawer enhancements */
+.el-drawer {
+  border-radius: var(--radius-large) 0 0 var(--radius-large);
+}
+
+.el-drawer__header {
+  padding: var(--spacing-xl);
+  border-bottom: 1px solid var(--border-lighter);
+}
+
+.el-drawer__body {
+  padding: 0;
+}
+
+/* Message enhancements */
+.el-message {
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-medium);
+  border: none;
+}
+
+/* Vue Flow customizations */
+.vue-flow {
+  background: var(--bg-tertiary);
+}
+
+.vue-flow__background {
+  background-color: var(--bg-tertiary);
+}
+
+.vue-flow__background-pattern {
+  stroke: var(--border-light);
+  opacity: 0.5;
+}
+
+.vue-flow__edge {
+  stroke-width: 2;
+}
+
+.vue-flow__edge.selected {
+  stroke: var(--primary-color);
+  stroke-width: 3;
+}
+
+.vue-flow__edge-label {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-small);
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Controls styling */
+.vue-flow__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-xl);
+}
+
+.vue-flow__controls-button {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-medium);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.vue-flow__controls-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-medium);
+}
+
+.vue-flow__controls-button svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-secondary);
+}
+
+/* Minimap styling */
+.vue-flow__minimap {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-light);
+  overflow: hidden;
+}
+
+.vue-flow__minimap-mask {
+  fill: rgba(64, 158, 255, 0.1);
+  stroke: var(--primary-color);
+  stroke-width: 2;
+}
+
+.vue-flow__minimap-node {
+  fill: var(--primary-color);
+  opacity: 0.7;
+}
+
+/* Connection line styling */
+.vue-flow__connection-line {
+  stroke: var(--primary-color);
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+  opacity: 0.7;
+}
+
+/* Selection styling */
+.vue-flow__selection {
+  background: rgba(64, 158, 255, 0.1);
+  border: 2px solid var(--primary-color);
+}
+
+/* Node styling */
+.vue-flow__node {
+  cursor: grab;
+}
+
+.vue-flow__node:active {
+  cursor: grabbing;
+}
+
+.vue-flow__node.selected {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Handle styling */
+.vue-flow__handle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-color);
+  background: white;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.vue-flow__node:hover .vue-flow__handle {
+  opacity: 1;
+}
+
+.vue-flow__handle:hover {
+  background: var(--primary-color);
+  transform: scale(1.2);
+}
+
+.vue-flow__handle-connecting {
+  background: var(--primary-color);
+  opacity: 1;
+  transform: scale(1.5);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.m-0 { margin: 0; }
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+
+.p-0 { padding: 0; }
+.p-1 { padding: var(--spacing-xs); }
+.p-2 { padding: var(--spacing-sm); }
+.p-3 { padding: var(--spacing-md); }
+.p-4 { padding: var(--spacing-lg); }
+
+.rounded { border-radius: var(--radius-medium); }
+.rounded-lg { border-radius: var(--radius-large); }
+.shadow { box-shadow: var(--shadow-light); }
+.shadow-md { box-shadow: var(--shadow-medium); }
+
+.cursor-pointer { cursor: pointer; }
+.cursor-grab { cursor: grab; }
+.cursor-grabbing { cursor: grabbing; }
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .vue-flow__controls {
+    margin: var(--spacing-md);
+  }
+  
+  .vue-flow__controls-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .vue-flow__minimap {
+    display: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .vue-flow__controls,
+  .vue-flow__minimap,
+  .add-table-btn {
+    display: none !important;
+  }
+  
+  .vue-flow {
+    background: white !important;
+  }
+  
+  .entity-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Accessibility enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators */
+.vue-flow__node:focus,
+.vue-flow__controls-button:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-primary: #000000;
+    --bg-color: #ffffff;
+  }
+  
+  .entity-card {
+    border-width: 3px;
+  }
+}
+
+/* Dark mode (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #121212;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-tertiary: #999999;
+    --border-color: #404040;
+    --border-light: #333333;
+    --border-lighter: #2a2a2a;
+  }
+}

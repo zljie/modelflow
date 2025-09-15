@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModelFlow - 数据库模型设计协作工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            overflow: hidden;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: #409eff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #337ecc;
+        }
+
+        .btn.success {
+            background: #67c23a;
+        }
+
+        .btn.success:hover {
+            background: #529b2e;
+        }
+
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 2rem;
+        }
+
+        .table-card {
+            position: absolute;
+            background: white;
+            border: 2px solid #e4e7ed;
+            border-radius: 8px;
+            min-width: 280px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: move;
+        }
+
+        .table-card:hover {
+            border-color: #409eff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px 6px 0 0;
+            cursor: move;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .table-name {
+            font-size: 12px;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .table-body {
+            padding: 8px 0;
+        }
+
+        .column-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid #f5f5f5;
+            transition: background 0.2s;
+        }
+
+        .column-row:hover {
+            background: #f8f9fa;
+        }
+
+        .column-row.primary-key {
+            background: #fef0f0;
+            font-weight: 600;
+        }
+
+        .column-row.required {
+            border-left: 3px solid #e6a23c;
+        }
+
+        .column-name {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .column-business {
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .column-type {
+            background: #409eff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #909399;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 1rem;
+        }
+
+        .ddl-textarea {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            background: #fafafa;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #e4e7ed;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            font-size: 12px;
+            color: #606266;
+            border-top: 1px solid #e4e7ed;
+        }
+
+        .connection-line {
+            position: absolute;
+            stroke: #409eff;
+            stroke-width: 2;
+            fill: none;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ ModelFlow - 数据库模型设计协作工具</h1>
+            <div class="header-actions">
+                <button id="toggleView" class="btn">
+                    👥 业务视图
+                </button>
+                <button id="exportBtn" class="btn success">
+                    📄 导出DDL
+                </button>
+                <button id="saveBtn" class="btn">
+                    💾 保存项目
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="canvas" id="canvas">
+                <svg class="connection-line" id="connectionSvg" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;">
+                    <!-- Connection lines will be drawn here -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#409eff" />
+                        </marker>
+                    </defs>
+                    <path d="M 420 150 Q 460 200 370 370" stroke="#409eff" stroke-width="2" fill="none" marker-end="url(#arrowhead)" />
+                    <path d="M 320 150 Q 360 200 370 370" stroke="#409eff" stroke-width="2" fill="none" marker-end="url(#arrowhead)" />
+                </svg>
+                
+                <!-- Book Table -->
+                <div class="table-card" style="left: 100px; top: 100px;" data-table="book">
+                    <div class="table-header">
+                        <h3>图书</h3>
+                        <span class="table-name">book</span>
+                    </div>
+                    <div class="table-body">
+                        <div class="column-row primary-key">
+                            <span class="column-name">id</span>
+                            <span class="column-info business">图书ID</span>
+                            <span class="column-info technical" style="display: none;">BIGINT AUTO_INCREMENT</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">isbn</span>
+                            <span class="column-info business">ISBN号</span>
+                            <span class="column-info technical" style="display: none;">VARCHAR(20)</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">title</span>
+                            <span class="column-info business">书名</span>
+                            <span class="column-info technical" style="display: none;">VARCHAR(255)</span>
+                        </div>
+                        <div class="column-row">
+                            <span class="column-name">author</span>
+                            <span class="column-info business">作者</span>
+                            <span class="column-info technical" style="display: none;">VARCHAR(100)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User Table -->
+                <div class="table-card" style="left: 400px; top: 100px;" data-table="user">
+                    <div class="table-header">
+                        <h3>读者</h3>
+                        <span class="table-name">user</span>
+                    </div>
+                    <div class="table-body">
+                        <div class="column-row primary-key">
+                            <span class="column-name">id</span>
+                            <span class="column-info business">读者ID</span>
+                            <span class="column-info technical" style="display: none;">BIGINT AUTO_INCREMENT</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">name</span>
+                            <span class="column-info business">读者姓名</span>
+                            <span class="column-info technical" style="display: none;">VARCHAR(50)</span>
+                        </div>
+                        <div class="column-row">
+                            <span class="column-name">phone</span>
+                            <span class="column-info business">联系电话</span>
+                            <span class="column-info technical" style="display: none;">VARCHAR(20)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Borrow Record Table -->
+                <div class="table-card" style="left: 250px; top: 350px;" data-table="borrow_record">
+                    <div class="table-header">
+                        <h3>借阅记录</h3>
+                        <span class="table-name">borrow_record</span>
+                    </div>
+                    <div class="table-body">
+                        <div class="column-row primary-key">
+                            <span class="column-name">id</span>
+                            <span class="column-info business">借阅ID</span>
+                            <span class="column-info technical" style="display: none;">BIGINT AUTO_INCREMENT</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">user_id</span>
+                            <span class="column-info business">读者ID</span>
+                            <span class="column-info technical" style="display: none;">BIGINT</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">book_id</span>
+                            <span class="column-info business">图书ID</span>
+                            <span class="column-info technical" style="display: none;">BIGINT</span>
+                        </div>
+                        <div class="column-row required">
+                            <span class="column-name">borrow_date</span>
+                            <span class="column-info business">借阅日期</span>
+                            <span class="column-info technical" style="display: none;">DATETIME</span>
+                        </div>
+                        <div class="column-row">
+                            <span class="column-name">return_date</span>
+                            <span class="column-info business">归还日期</span>
+                            <span class="column-info technical" style="display: none;">DATETIME</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            ModelFlow MVP - 业务与技术协作的数据库建模工具 | 当前模式: <span id="currentMode">业务视图</span> | 按Tab键切换视图模式
+        </div>
+    </div>
+
+    <!-- DDL Export Modal -->
+    <div id="ddlModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>导出MySQL DDL</h3>
+                <button class="close-btn" onclick="closeDDLModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="ddlTextarea" class="ddl-textarea" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="copyDDL()">📋 复制到剪贴板</button>
+                <button class="btn success" onclick="downloadDDL()">⬇️ 下载为.sql文件</button>
+                <button class="btn" onclick="closeDDLModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let viewMode = 'business';
+        
+        // Sample data
+        const projectData = {
+            name: '图书馆管理系统',
+            description: '经典的图书馆业务模型示例',
+            tables: [
+                {
+                    name: 'book',
+                    businessName: '图书',
+                    businessComment: '图书基础信息管理',
+                    columns: [
+                        { name: 'id', type: 'BIGINT AUTO_INCREMENT', businessName: '图书ID', businessComment: '图书唯一标识', isPrimaryKey: true, isRequired: true },
+                        { name: 'isbn', type: 'VARCHAR(20)', businessName: 'ISBN号', businessComment: '国际标准书号', isPrimaryKey: false, isRequired: true },
+                        { name: 'title', type: 'VARCHAR(255)', businessName: '书名', businessComment: '图书标题名称', isPrimaryKey: false, isRequired: true },
+                        { name: 'author', type: 'VARCHAR(100)', businessName: '作者', businessComment: '图书作者姓名', isPrimaryKey: false, isRequired: false }
+                    ]
+                },
+                {
+                    name: 'user',
+                    businessName: '读者',
+                    businessComment: '图书馆读者信息管理',
+                    columns: [
+                        { name: 'id', type: 'BIGINT AUTO_INCREMENT', businessName: '读者ID', businessComment: '读者唯一标识', isPrimaryKey: true, isRequired: true },
+                        { name: 'name', type: 'VARCHAR(50)', businessName: '读者姓名', businessComment: '读者真实姓名', isPrimaryKey: false, isRequired: true },
+                        { name: 'phone', type: 'VARCHAR(20)', businessName: '联系电话', businessComment: '读者联系方式', isPrimaryKey: false, isRequired: false }
+                    ]
+                },
+                {
+                    name: 'borrow_record',
+                    businessName: '借阅记录',
+                    businessComment: '图书借阅归还记录管理',
+                    columns: [
+                        { name: 'id', type: 'BIGINT AUTO_INCREMENT', businessName: '借阅ID', businessComment: '借阅记录唯一标识', isPrimaryKey: true, isRequired: true },
+                        { name: 'user_id', type: 'BIGINT', businessName: '读者ID', businessComment: '借阅者标识', isPrimaryKey: false, isRequired: true },
+                        { name: 'book_id', type: 'BIGINT', businessName: '图书ID', businessComment: '被借阅图书标识', isPrimaryKey: false, isRequired: true },
+                        { name: 'borrow_date', type: 'DATETIME', businessName: '借阅日期', businessComment: '图书借出时间', isPrimaryKey: false, isRequired: true },
+                        { name: 'return_date', type: 'DATETIME', businessName: '归还日期', businessComment: '图书归还时间，NULL表示未归还', isPrimaryKey: false, isRequired: false }
+                    ]
+                }
+            ]
+        };
+        
+        // Toggle between business and technical view
+        function toggleView() {
+            viewMode = viewMode === 'business' ? 'technical' : 'business';
+            
+            const toggleBtn = document.getElementById('toggleView');
+            const currentModeSpan = document.getElementById('currentMode');
+            
+            if (viewMode === 'business') {
+                toggleBtn.textContent = '👥 业务视图';
+                currentModeSpan.textContent = '业务视图';
+                document.querySelectorAll('.column-info.business').forEach(el => el.style.display = 'inline');
+                document.querySelectorAll('.column-info.technical').forEach(el => el.style.display = 'none');
+            } else {
+                toggleBtn.textContent = '🔧 技术视图';
+                currentModeSpan.textContent = '技术视图';
+                document.querySelectorAll('.column-info.business').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.column-info.technical').forEach(el => el.style.display = 'inline');
+            }
+        }
+        
+        // Export DDL
+        function exportDDL() {
+            let ddl = `-- ${projectData.name}\n-- Generated by ModelFlow\n-- ${new Date().toLocaleString()}\n\n`;
+            
+            projectData.tables.forEach(table => {
+                ddl += `-- 表: ${table.businessName} (${table.name})\n`;
+                if (table.businessComment) {
+                    ddl += `-- ${table.businessComment}\n`;
+                }
+                ddl += `CREATE TABLE \`${table.name}\` (\n`;
+                
+                table.columns.forEach((column, index) => {
+                    ddl += `  \`${column.name}\` ${column.type}`;
+                    if (column.isPrimaryKey) ddl += ' PRIMARY KEY';
+                    if (column.isRequired && !column.isPrimaryKey) ddl += ' NOT NULL';
+                    if (column.businessComment) {
+                        ddl += ` COMMENT '${column.businessComment}'`;
+                    }
+                    if (index < table.columns.length - 1) ddl += ',';
+                    ddl += '\n';
+                });
+                
+                ddl += `) COMMENT='${table.businessComment || table.businessName}';\n\n`;
+            });
+            
+            // Add foreign key constraints
+            ddl += `-- 外键约束\n`;
+            ddl += `ALTER TABLE \`borrow_record\` ADD FOREIGN KEY (\`user_id\`) REFERENCES \`user\`(\`id\`);\n`;
+            ddl += `ALTER TABLE \`borrow_record\` ADD FOREIGN KEY (\`book_id\`) REFERENCES \`book\`(\`id\`);\n`;
+            
+            document.getElementById('ddlTextarea').value = ddl;
+            document.getElementById('ddlModal').classList.add('show');
+        }
+        
+        function closeDDLModal() {
+            document.getElementById('ddlModal').classList.remove('show');
+        }
+        
+        async function copyDDL() {
+            const textarea = document.getElementById('ddlTextarea');
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                alert('DDL已复制到剪贴板！');
+            } catch (err) {
+                textarea.select();
+                document.execCommand('copy');
+                alert('DDL已复制到剪贴板！');
+            }
+        }
+        
+        function downloadDDL() {
+            const ddl = document.getElementById('ddlTextarea').value;
+            const blob = new Blob([ddl], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${projectData.name.replace(/\s+/g, '_')}_schema.sql`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('DDL文件下载成功！');
+        }
+        
+        function saveProject() {
+            localStorage.setItem('modelflow-project', JSON.stringify(projectData));
+            alert('项目已保存到本地存储！');
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Tab: Toggle view mode
+            if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                    event.preventDefault();
+                    toggleView();
+                }
+            }
+            
+            // Ctrl/Cmd + S: Save project
+            if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                event.preventDefault();
+                saveProject();
+            }
+            
+            // Ctrl/Cmd + E: Export DDL
+            if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+                event.preventDefault();
+                exportDDL();
+            }
+        });
+        
+        // Make tables draggable
+        function makeDraggable() {
+            const tables = document.querySelectorAll('.table-card');
+            
+            tables.forEach(table => {
+                let isDragging = false;
+                let startX, startY, startLeft, startTop;
+                
+                const header = table.querySelector('.table-header');
+                
+                header.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    const rect = table.getBoundingClientRect();
+                    const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+                    startLeft = rect.left - canvasRect.left;
+                    startTop = rect.top - canvasRect.top;
+                    
+                    header.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    
+                    const newLeft = Math.max(0, startLeft + deltaX);
+                    const newTop = Math.max(0, startTop + deltaY);
+                    
+                    table.style.left = newLeft + 'px';
+                    table.style.top = newTop + 'px';
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        header.style.cursor = 'move';
+                    }
+                });
+            });
+        }
+        
+        // Event listeners
+        document.getElementById('toggleView').addEventListener('click', toggleView);
+        document.getElementById('exportBtn').addEventListener('click', exportDDL);
+        document.getElementById('saveBtn').addEventListener('click', saveProject);
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            makeDraggable();
+            
+            // Show welcome message
+            setTimeout(() => {
+                if (!localStorage.getItem('modelflow-visited')) {
+                    alert('🎉 欢迎使用 ModelFlow！\n\n这是一个数据库模型设计协作工具，支持：\n• 业务与技术双视图切换（按Tab键）\n• 拖拽移动表格\n• 一键导出MySQL DDL\n• 本地项目保存\n\n开始探索图书馆示例模型吧！');
+                    localStorage.setItem('modelflow-visited', 'true');
+                }
+            }, 500);
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('ddlModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDDLModal();
+            }
+        });
+    </script>
+</body>
+</html>
