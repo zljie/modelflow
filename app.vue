@@ -1,5 +1,33 @@
 <template>
   <div class="app-container">
+    <!-- 主导航 -->
+    <nav class="main-nav">
+      <div class="nav-brand">
+        <h1>ModelFlow</h1>
+      </div>
+      <div class="nav-menu">
+        <button 
+          @click="currentView = 'erdl'" 
+          :class="['nav-btn', { active: currentView === 'erdl' }]"
+        >
+          数据建模
+        </button>
+        <button 
+          @click="currentView = 'data'" 
+          :class="['nav-btn', { active: currentView === 'data' }]"
+          :disabled="!tables.length"
+        >
+          数据管理
+        </button>
+        <button 
+          @click="currentView = 'process'" 
+          :class="['nav-btn', { active: currentView === 'process' }]"
+        >
+          流程设计
+        </button>
+      </div>
+    </nav>
+    
     <div class="main-content">
       <!-- ERDL编辑器视图 -->
       <div v-if="currentView === 'erdl'" class="erdl-view">
@@ -126,11 +154,27 @@
               v-if="activeTab === 'form'"
               :table="selectedTable"
               :edit-data="editingRecord"
+              :all-tables="tables"
               @submit="saveRecord"
               @cancel="cancelForm"
             />
           </div>
         </div>
+      </div>
+      
+      <!-- 流程设计视图 -->
+      <div v-if="currentView === 'process'" class="process-view">
+        <div class="process-header">
+          <h2>BPMN 流程设计器</h2>
+          <p>设计和管理业务流程模型</p>
+        </div>
+        <BpmnModeler
+          ref="bpmnModelerRef"
+          :initial-xml="processXml"
+          :tables="tables"
+          @save="handleProcessSave"
+          @export="handleProcessExport"
+        />
       </div>
     </div>
   </div>
@@ -142,11 +186,12 @@ import { parseERDL, SAMPLE_ERDL } from '~/utils/erdl-parser'
 import type { Table } from '~/types/model'
 import DynamicForm from '~/components/DynamicForm.vue'
 import DynamicList from '~/components/DynamicList.vue'
+import BpmnModeler from '~/components/BpmnModeler.vue'
 
 const isLoaded = ref(false)
 const viewMode = ref('business')
 const showERDLEditor = ref(false)
-const currentView = ref<'erdl' | 'data'>('erdl')
+const currentView = ref<'erdl' | 'data' | 'process'>('erdl')
 const erdlText = ref('')
 const parseErrors = ref<string[]>([])
 const tables = ref<Table[]>([])
@@ -157,6 +202,10 @@ const activeTab = ref<'list' | 'form'>('list')
 const editingRecord = ref(null)
 const dataLoading = ref(false)
 const tableData = ref<Record<string, any[]>>({})
+
+// 流程设计相关状态
+const bpmnModelerRef = ref<InstanceType<typeof BpmnModeler>>()
+const processXml = ref('')
 
 // 计算属性
 const selectedTable = computed(() => {
@@ -220,14 +269,14 @@ const refreshTableData = () => {
 }
 
 const loadTableData = (tableId: string) => {
-  const stored = localStorage.getItem(`table_data_${tableId}`)
+  // 根据tableId找到对应的表名
+  const table = tables.value.find(t => t.id === tableId)
+  if (!table) return []
+  
+  const stored = localStorage.getItem(`table_data_${table.name}`)
   return stored ? JSON.parse(stored) : []
 }
 
-const saveTableData = (tableId: string, data: any[]) => {
-  localStorage.setItem(`table_data_${tableId}`, JSON.stringify(data))
-  tableData.value[tableId] = data
-}
 
 const showAddForm = () => {
   editingRecord.value = null
@@ -243,21 +292,29 @@ const saveRecord = (record: any) => {
   if (!selectedTable.value) return
   
   const tableId = selectedTable.value.id
+  const tableName = selectedTable.value.name
   const currentData = getTableData(tableId)
+  
+  // 找到主键字段
+  const primaryKeyColumn = selectedTable.value.columns.find(col => col.isPrimaryKey)
+  const primaryKeyField = primaryKeyColumn ? primaryKeyColumn.name : 'id'
   
   if (editingRecord.value) {
     // 编辑模式
-    const index = currentData.findIndex(item => item.id === editingRecord.value.id)
+    const index = currentData.findIndex(item => item[primaryKeyField] === editingRecord.value[primaryKeyField])
     if (index !== -1) {
-      currentData[index] = { ...record, id: editingRecord.value.id }
+      currentData[index] = { ...record }
     }
   } else {
-    // 新增模式
-    const newRecord = { ...record, id: Date.now().toString() }
-    currentData.push(newRecord)
+    // 新增模式 - 直接使用DynamicForm传来的record，它已经包含了正确的主键
+    currentData.push(record)
   }
   
-  saveTableData(tableId, currentData)
+  // 使用表名而不是表ID作为存储键
+  const tableDataKey = `table_data_${tableName}`
+  localStorage.setItem(tableDataKey, JSON.stringify(currentData))
+  tableData.value[tableId] = currentData
+  
   editingRecord.value = null
   activeTab.value = 'list'
 }
@@ -266,10 +323,19 @@ const deleteRecord = (record: any) => {
   if (!selectedTable.value) return
   
   const tableId = selectedTable.value.id
+  const tableName = selectedTable.value.name
   const currentData = getTableData(tableId)
-  const filteredData = currentData.filter(item => item.id !== record.id)
   
-  saveTableData(tableId, filteredData)
+  // 找到主键字段
+  const primaryKeyColumn = selectedTable.value.columns.find(col => col.isPrimaryKey)
+  const primaryKeyField = primaryKeyColumn ? primaryKeyColumn.name : 'id'
+  
+  const filteredData = currentData.filter(item => item[primaryKeyField] !== record[primaryKeyField])
+  
+  // 使用表名作为存储键
+  const tableDataKey = `table_data_${tableName}`
+  localStorage.setItem(tableDataKey, JSON.stringify(filteredData))
+  tableData.value[tableId] = filteredData
 }
 
 const cancelForm = () => {
@@ -281,9 +347,22 @@ const saveData = () => {
   const data = {
     erdlText: erdlText.value,
     tables: tables.value,
-    currentView: currentView.value
+    currentView: currentView.value,
+    processXml: processXml.value
   }
   localStorage.setItem('modelflow_data', JSON.stringify(data))
+}
+
+// 流程设计相关方法
+const handleProcessSave = (xml: string) => {
+  processXml.value = xml
+  saveData()
+  console.log('流程已保存')
+}
+
+const handleProcessExport = (xml: string) => {
+  console.log('导出流程XML:', xml)
+  // 这里可以添加导出逻辑
 }
 
 const loadData = () => {
@@ -294,6 +373,7 @@ const loadData = () => {
       erdlText.value = data.erdlText || ''
       tables.value = data.tables || []
       currentView.value = data.currentView || 'erdl'
+      processXml.value = data.processXml || ''
       
       if (tables.value.length > 0) {
         showERDLEditor.value = true
@@ -317,6 +397,70 @@ onMounted(() => {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 主导航样式 */
+.main-nav {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin: -20px -20px 20px -20px;
+  border-radius: 12px 12px 0 0;
+}
+
+.nav-brand h1 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.nav-btn:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: #3498db;
+}
+
+.nav-btn.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-btn:disabled:hover {
+  background: transparent;
+  border-color: transparent;
 }
 
 .main-content {
@@ -693,5 +837,31 @@ onMounted(() => {
 
 .tab-content {
   min-height: 400px;
+}
+
+/* 流程设计视图样式 */
+.process-view {
+  padding: 20px;
+  min-height: 600px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.process-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.process-header h2 {
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  font-size: 28px;
+}
+
+.process-header p {
+  color: #7f8c8d;
+  margin: 0;
+  font-size: 16px;
 }
 </style>

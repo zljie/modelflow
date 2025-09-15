@@ -1,104 +1,117 @@
 <template>
   <div class="dynamic-form">
-    <div class="form-header">
-      <h3>{{ table.name }} - 新增记录</h3>
-      <div class="form-actions">
-        <button @click="resetForm" class="btn-secondary">重置</button>
-        <button @click="submitForm" class="btn-primary">保存</button>
-      </div>
-    </div>
-    
-    <form @submit.prevent="submitForm" class="form-content">
-      <div v-for="column in table.columns" :key="column.id" class="form-field">
-        <label :for="column.name" class="field-label">
-          {{ column.name }}
-          <span v-if="column.isPrimaryKey" class="key-badge pk">主键</span>
-          <span v-if="column.isForeignKey" class="key-badge fk">外键</span>
-          <span v-if="isRequired(column)" class="required">*</span>
-        </label>
-        
-        <!-- 文本输入 -->
-        <input 
-          v-if="isTextInput(column.type)"
-          :id="column.name"
-          v-model="formData[column.name]"
-          :type="getInputType(column.type)"
-          :placeholder="getPlaceholder(column)"
+    <el-card>
+      <template #header>
+        <div class="form-header">
+          <span>{{ table.name }} - {{ editData ? '编辑记录' : '新增记录' }}</span>
+          <div class="form-actions">
+            <el-button @click="resetForm">重置</el-button>
+            <el-button type="primary" @click="submitForm">保存</el-button>
+          </div>
+        </div>
+      </template>
+      
+      <el-form :model="formData" label-width="120px" label-position="left">
+        <el-form-item 
+          v-for="column in table.columns" 
+          :key="column.id" 
+          v-show="!shouldHideField(column)"
+          :label="column.name"
           :required="isRequired(column)"
-          :readonly="column.isPrimaryKey && column.type.toLowerCase().includes('int')"
-          class="form-input"
-        />
-        
-        <!-- 数字输入 -->
-        <input 
-          v-else-if="isNumberInput(column.type)"
-          :id="column.name"
-          v-model.number="formData[column.name]"
-          type="number"
-          :placeholder="getPlaceholder(column)"
-          :required="isRequired(column)"
-          :readonly="column.isPrimaryKey"
-          class="form-input"
-        />
-        
-        <!-- 日期时间输入 -->
-        <input 
-          v-else-if="isDateInput(column.type)"
-          :id="column.name"
-          v-model="formData[column.name]"
-          :type="getDateInputType(column.type)"
-          :required="isRequired(column)"
-          class="form-input"
-        />
-        
-        <!-- 布尔值输入 -->
-        <div v-else-if="isBooleanInput(column.type)" class="checkbox-field">
-          <input 
-            :id="column.name"
+        >
+          <template #label>
+            <div class="field-label">
+              {{ column.name }}
+              <el-tag v-if="column.isPrimaryKey" type="warning" size="small">主键</el-tag>
+              <el-tag v-if="column.isForeignKey" type="info" size="small">外键</el-tag>
+              <span v-if="isRequired(column)" class="required">*</span>
+            </div>
+          </template>
+          
+          <!-- 外键选择器 -->
+          <el-select 
+            v-if="column.isForeignKey"
             v-model="formData[column.name]"
-            type="checkbox"
-            class="form-checkbox"
+            :placeholder="`请选择${column.businessComment || column.name}`"
+            clearable
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="option in getForeignKeyOptions(column)" 
+              :key="option.value" 
+              :value="option.value"
+              :label="option.label"
+            />
+          </el-select>
+          
+          <!-- 文本输入 -->
+          <el-input 
+            v-else-if="isTextInput(column.type)"
+            v-model="formData[column.name]"
+            :type="getInputType(column.type)"
+            :placeholder="getPlaceholder(column)"
+            :readonly="column.isPrimaryKey && column.type.toLowerCase().includes('int')"
           />
-          <label :for="column.name" class="checkbox-label">是/否</label>
-        </div>
-        
-        <!-- 文本域 -->
-        <textarea 
-          v-else-if="isTextArea(column.type)"
-          :id="column.name"
-          v-model="formData[column.name]"
-          :placeholder="getPlaceholder(column)"
-          :required="isRequired(column)"
-          rows="3"
-          class="form-textarea"
-        ></textarea>
-        
-        <!-- 默认文本输入 -->
-        <input 
-          v-else
-          :id="column.name"
-          v-model="formData[column.name]"
-          type="text"
-          :placeholder="getPlaceholder(column)"
-          :required="isRequired(column)"
-          class="form-input"
-        />
-        
-        <div v-if="column.businessComment" class="field-help">
-          {{ column.businessComment }}
-        </div>
-      </div>
-    </form>
+          
+          <!-- 数字输入 -->
+          <el-input-number 
+            v-else-if="isNumberInput(column.type)"
+            v-model="formData[column.name]"
+            :placeholder="getPlaceholder(column)"
+            :disabled="column.isPrimaryKey"
+            style="width: 100%"
+          />
+          
+          <!-- 日期时间输入 -->
+          <el-date-picker 
+            v-else-if="isDateInput(column.type)"
+            v-model="formData[column.name]"
+            :type="getDatePickerType(column.type)"
+            :placeholder="getPlaceholder(column)"
+            style="width: 100%"
+          />
+          
+          <!-- 布尔值输入 -->
+          <el-switch 
+            v-else-if="isBooleanInput(column.type)"
+            v-model="formData[column.name]"
+            active-text="是"
+            inactive-text="否"
+          />
+          
+          <!-- 文本域 -->
+          <el-input 
+            v-else-if="isTextArea(column.type)"
+            v-model="formData[column.name]"
+            type="textarea"
+            :rows="3"
+            :placeholder="getPlaceholder(column)"
+          />
+          
+          <!-- 默认文本输入 -->
+          <el-input 
+            v-else
+            v-model="formData[column.name]"
+            :placeholder="getPlaceholder(column)"
+          />
+          
+          <div v-if="column.businessComment" class="field-help">
+            {{ column.businessComment }}
+          </div>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import type { Table, Column } from '~/types/model'
 
 interface Props {
   table: Table
   editData?: Record<string, any>
+  allTables: Table[]
 }
 
 interface Emits {
@@ -112,6 +125,64 @@ const emit = defineEmits<Emits>()
 // 表单数据
 const formData = reactive<Record<string, any>>({})
 
+// 获取外键选项数据
+const getForeignKeyOptions = (column: Column) => {
+  if (!column.isForeignKey) return []
+  
+  // 根据外键字段名推断关联表
+  const columnName = column.name.toLowerCase()
+  let referencedTableName = ''
+  
+  if (columnName.endsWith('id')) {
+    referencedTableName = columnName.slice(0, -2) // 移除 'id' 后缀
+  }
+  
+  // 查找关联表
+  const referencedTable = props.allTables.find(table => 
+    table.name.toLowerCase() === referencedTableName ||
+    table.name.toLowerCase() === referencedTableName + 's' ||
+    table.name.toLowerCase() === referencedTableName.slice(0, -1) // 处理复数形式
+  )
+  
+  if (!referencedTable) return []
+  
+  // 从localStorage获取关联表数据
+  const tableDataKey = `table_data_${referencedTable.name}`
+  const storedData = localStorage.getItem(tableDataKey)
+  if (!storedData) return []
+  
+  try {
+    const data = JSON.parse(storedData)
+    return data.map((item: any) => {
+      // 找到主键字段作为值
+      const pkColumn = referencedTable.columns.find(col => col.isPrimaryKey)
+      const pkValue = pkColumn ? item[pkColumn.name] : item.id
+      
+      // 找到显示字段（通常是name字段或第一个非主键字段）
+      const displayColumn = referencedTable.columns.find(col => 
+        col.name.toLowerCase().includes('name') || 
+        col.name.toLowerCase().includes('title')
+      ) || referencedTable.columns.find(col => !col.isPrimaryKey)
+      
+      const displayValue = displayColumn ? item[displayColumn.name] : pkValue
+      
+      return {
+        value: pkValue,
+        label: `${displayValue} (ID: ${pkValue})`
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+// 判断是否应该隐藏字段（自增主键）
+const shouldHideField = (column: Column): boolean => {
+  return column.isPrimaryKey && 
+         column.type.toLowerCase().includes('int') && 
+         !props.editData // 新增时隐藏，编辑时显示
+}
+
 // 初始化表单数据
 const initFormData = () => {
   props.table.columns.forEach(column => {
@@ -119,7 +190,7 @@ const initFormData = () => {
       formData[column.name] = props.editData[column.name]
     } else {
       // 设置默认值
-      if (column.isPrimaryKey && column.type.toLowerCase().includes('int')) {
+      if (shouldHideField(column)) {
         formData[column.name] = null // 自增主键
       } else if (isBooleanInput(column.type)) {
         formData[column.name] = false
@@ -139,10 +210,10 @@ const resetForm = () => {
 
 // 提交表单
 const submitForm = () => {
-  // 验证必填字段
+  // 验证必填字段（排除隐藏的自增主键）
   const errors: string[] = []
   props.table.columns.forEach(column => {
-    if (isRequired(column)) {
+    if (isRequired(column) && !shouldHideField(column)) {
       const value = formData[column.name]
       if (value === null || value === undefined || value === '') {
         errors.push(`${column.name} 是必填字段`)
@@ -162,6 +233,25 @@ const submitForm = () => {
       cleanData[key] = null
     }
   })
+  
+  // 为自增主键生成ID（如果是新增记录）
+  if (!props.editData) {
+    props.table.columns.forEach(column => {
+      if (shouldHideField(column)) {
+        // 生成简单的自增ID
+        const tableDataKey = `table_data_${props.table.name}`
+        const storedData = localStorage.getItem(tableDataKey)
+        let maxId = 0
+        if (storedData) {
+          try {
+            const data = JSON.parse(storedData)
+            maxId = Math.max(...data.map((item: any) => item[column.name] || 0))
+          } catch {}
+        }
+        cleanData[column.name] = maxId + 1
+      }
+    })
+  }
   
   emit('submit', cleanData)
 }
@@ -213,6 +303,13 @@ const getDateInputType = (type: string): string => {
   return 'date'
 }
 
+const getDatePickerType = (type: string): string => {
+  const lowerType = type.toLowerCase()
+  if (lowerType.includes('datetime') || lowerType.includes('timestamp')) return 'datetime'
+  if (lowerType.includes('time')) return 'time'
+  return 'date'
+}
+
 // 获取占位符
 const getPlaceholder = (column: Column): string => {
   if (column.businessComment) {
@@ -232,25 +329,13 @@ initFormData()
 
 <style scoped>
 .dynamic-form {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  margin: 20px;
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.form-header h3 {
-  margin: 0;
-  color: #333;
-  font-size: 18px;
 }
 
 .form-actions {
@@ -258,23 +343,11 @@ initFormData()
   gap: 10px;
 }
 
-.form-content {
-  padding: 20px;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.form-field {
-  margin-bottom: 20px;
-}
-
 .field-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
   font-weight: 500;
-  color: #333;
 }
 
 .key-badge {
@@ -302,75 +375,9 @@ initFormData()
   font-weight: bold;
 }
 
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.form-input:readonly {
-  background-color: #f8f9fa;
-  color: #6c757d;
-}
-
-.checkbox-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.form-checkbox {
-  width: 18px;
-  height: 18px;
-}
-
-.checkbox-label {
-  margin: 0;
-  font-weight: normal;
-}
-
 .field-help {
   margin-top: 4px;
   font-size: 12px;
   color: #6c757d;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #545b62;
 }
 </style>
