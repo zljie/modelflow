@@ -23,9 +23,6 @@
     "@vue-flow/controls": "^1.1.1",
     "@vue-flow/core": "^1.26.0",
     "@vue-flow/minimap": "^1.4.0",
-    "bpmn-js": "^18.6.3",
-    "bpmn-js-properties-panel": "^5.42.0",
-    "bpmn-js-token-simulation": "^0.38.1",
     "element-plus": "^2.11.2",
     "pinia": "^2.1.7",
     "uuid": "^9.0.1"

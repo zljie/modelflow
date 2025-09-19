@@ -164,18 +164,24 @@
       
       <!-- 流程设计视图 -->
       <div v-if="currentView === 'process'" class="process-view">
-        <div class="process-header">
-          <h2>BPMN 流程设计器</h2>
-          <p>设计和管理业务流程模型</p>
+          <el-tabs v-model="processActiveTab" type="card">
+            <el-tab-pane label="流程设计" name="design">
+              <div class="process-header">
+                <h2>审批流程设计</h2>
+                <p>设计中国式审批流程，支持动态加签、任意驳回等特色功能</p>
+              </div>
+              <FlowLongDesigner 
+                ref="flowLongDesignerRef"
+                :process-xml="processXml" 
+                @save="saveProcess"
+                :tables="tables"
+              />
+            </el-tab-pane>
+            <el-tab-pane label="流程实例" name="instances">
+              <ApprovalFlowViewer />
+            </el-tab-pane>
+          </el-tabs>
         </div>
-        <BpmnModeler
-          ref="bpmnModelerRef"
-          :initial-xml="processXml"
-          :tables="tables"
-          @save="handleProcessSave"
-          @export="handleProcessExport"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -186,7 +192,8 @@ import { parseERDL, SAMPLE_ERDL } from '~/utils/erdl-parser'
 import type { Table } from '~/types/model'
 import DynamicForm from '~/components/DynamicForm.vue'
 import DynamicList from '~/components/DynamicList.vue'
-import BpmnModeler from '~/components/BpmnModeler.vue'
+import FlowLongDesigner from '~/components/FlowLongDesigner.vue'
+import ApprovalFlowViewer from '~/components/ApprovalFlowViewer.vue'
 
 const isLoaded = ref(false)
 const viewMode = ref('business')
@@ -204,8 +211,9 @@ const dataLoading = ref(false)
 const tableData = ref<Record<string, any[]>>({})
 
 // 流程设计相关状态
-const bpmnModelerRef = ref<InstanceType<typeof BpmnModeler>>()
+const flowLongDesignerRef = ref<InstanceType<typeof FlowLongDesigner>>()
 const processXml = ref('')
+const processActiveTab = ref('design')
 
 // 计算属性
 const selectedTable = computed(() => {
@@ -841,11 +849,15 @@ onMounted(() => {
 
 /* 流程设计视图样式 */
 .process-view {
-  padding: 20px;
-  min-height: 600px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: #f8f9fa;
-  border-radius: 12px;
-  margin: 20px;
+  z-index: 1000;
+  padding: 0;
+  margin: 0;
 }
 
 .process-header {
